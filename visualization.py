@@ -4,87 +4,45 @@ from math import sqrt
 from hexmap import DiamondHexMap, TriangleHexMap
 
 class HexMapVisualizer:
-    def __init__(self, cells, is_diamond_map, size):
+    def __init__(self, cells, is_diamond_map, size, game_type):
         self.cells = cells
         self.is_diamond_map = is_diamond_map
         self.size = size
-        self.board = self.create_graph()
+        self.board = self.create_graph(size-1, game_type)
+        self.edges = self.board.edges()
+        self.colors = [self.board[u][v]['color'] for u,v in self.edges]
+        self.weights = [self.board[u][v]['weight'] for u,v in self.edges]
         self.color_map = {0: "white", 1: "red", 2: "blue"}
-        self.edge_colors, self.weights = self.set_border()
 
-    def set_border(self):
-        red_edge_indices, blue_edge_indices = self.generate_indices()
-        colors = []
-        weights = []
-        for x, y, label in self.board.edges.data("label"):
-            if label in red_edge_indices:
-                colors.append("red")
-                weights.append(3)
-            elif label in blue_edge_indices:
-                colors.append("blue")
-                weights.append(3)
-            else:
-                colors.append("black")
-                weights.append(1)
-
-        return colors, weights
-
-    def generate_indices(self):
-        default_size = 3
-        default_end = 5
-        red_default = [0,2,14,15]
-        blue_default = [1,8,6,13]
-
-        if self.size == default_size:
-            return red_default, blue_default
-        
-        red = []
-        blue = []
-
-        length = self.size - 1
-
-        offset_0 = (self.size - default_size) * 3
-        offset_1 = (self.size - default_size - 1) * 3
-
-        for i in range(length):
-            if i < 2:
-                red.append(red_default[:3][i])
-            else:
-                red.append(red[-1] + 3)
-
-            if i == 0:
-                blue.append(1)
-            else:
-                blue.append(blue[-1] + 10 + offset_1)
-        
-        for i in range(length):
-            red.append((default_end + offset_0) * self.size - i)
-
-            if i == 0:
-                blue.append(6 + offset_0)
-            else:
-                blue.append(blue[-1] + 10 + offset_1)
-        
-
-        return red, blue
-        
-
-
-    def create_graph(self):
+    def create_graph(self, size, game_type):
         """
             Creates a graph using Networkx, adds nodes from a HexMap 
             and edges between neighboring nodes
         """
-        i = 0
         g = nx.Graph()
-        nodes = set()
+        red_pairs = set()
+        blue_pairs = set()
+        black_pairs = set()
+
         for cell in self.cells:
             g.add_node((cell.pos[0], cell.pos[1]), pos=self.pos_in_graph(cell.pos))
-            nodes.add((cell.pos[0], cell.pos[1]))
+
             for neighbor in cell.neighbors:
-                if (neighbor.pos[0], neighbor.pos[1]) not in nodes:
-                    g.add_edge((cell.pos[0], cell.pos[1]), (neighbor.pos[0], neighbor.pos[1]), label=i)
-                    i+=1    
+                if cell.pos[0] == 0 and neighbor.pos[0] == 0 or cell.pos[0] == size and neighbor.pos[0] == size:
+                    red_pairs.add(((cell.pos[0], cell.pos[1]), (neighbor.pos[0], neighbor.pos[1])))
+                elif cell.pos[1] == 0 and neighbor.pos[1] == 0 or cell.pos[1] == size and neighbor.pos[1] == size:
+                    blue_pairs.add(((cell.pos[0], cell.pos[1]), (neighbor.pos[0], neighbor.pos[1])))
+                else:
+                    black_pairs.add(((cell.pos[0], cell.pos[1]), (neighbor.pos[0], neighbor.pos[1])))
+            
+        if game_type == "hex":
+            g.add_edges_from(red_pairs, color="r", weight=4)
+            g.add_edges_from(blue_pairs, color="b", weight=4)
+            g.add_edges_from(black_pairs, color="black", weight=1)
+        else:
+            g.add_edges_from([((cell.pos[0], cell.pos[1]), (neighbor.pos[0], neighbor.pos[1])) \
+                for cell in self.cells for neighbor in cell.neighbors])
+            
         return g
 
     def pos_in_graph(self, pos):
@@ -115,14 +73,13 @@ class HexMapVisualizer:
             Draw a given state with the current board-graph. The action parameter 
             contains references to the jumper and jumped (green and red respectively).
         """
-        plt.pause(delay)
         plt.clf()
         nx.draw(
             self.board,
             nx.get_node_attributes(self.board, 'pos'),
             node_color=self.get_node_colors(state),
             edgecolors="black",
-            edge_color=self.edge_colors,
+            edge_color=self.colors, 
             width=self.weights
         )
         """
@@ -135,3 +92,4 @@ class HexMapVisualizer:
         """
         plt.axis('equal')
         plt.draw()
+        plt.pause(delay)

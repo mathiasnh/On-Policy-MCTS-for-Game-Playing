@@ -95,15 +95,41 @@ class Cell:
     """
         An individual cell in the hexagonal grid. Has a positional attribute 
         pos = tuple(row, column), a value "owner" for knowing if the cell is
-        empty or owned by player 1 or 2, and a list of neighbors. 
+        empty or owned by player 1 (red) or 2 (blue), and a list of neighbors. 
     """
     def __init__(self, pos, pegged, neighbors=[]):
         self.pos = pos
         self.owned = pegged
         self.neighbors = neighbors
+        self.role = None
+        self.connected = False
     
     def add_neighbors(self, neighbors):
         self.neighbors = neighbors
-    
-    def set_peg(self, v):
-        self.owned = v
+
+    def set_peg(self, player):
+        self.owned = player
+        self.check_placement(player)
+        self.propogate_connection(player)
+
+    def check_placement(self, player):
+        x, y = self.pos
+        if player == 1 and x == 0:
+            self.connected = True
+        elif player == 2 and y == 0:
+            self.connected = True
+        elif [n for n in self.neighbors if n.connected and n.owned == player] != []:
+            self.connected = True
+
+    def propogate_connection(self, player):
+        for neighbor in self.neighbors:
+            if self.connected and neighbor.owned == player and not neighbor.connected:
+                    """
+                    print("{} connected to {}".format((self.pos, "red" if self.owned == 1 else "blue"),\
+                        (neighbor.pos, "red" if neighbor.owned == 1 else "blue")))
+                    """
+                    neighbor.connected = True 
+                    neighbor.propogate_connection(player)
+
+
+            
