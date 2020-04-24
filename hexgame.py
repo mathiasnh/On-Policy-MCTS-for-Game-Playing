@@ -102,7 +102,6 @@ if __name__ == "__main__":
     player = 1
     actual_player = 1
     mc_player = 1
-    player = 1
 
     i_save = None
     RBUF = ReplayBuffer()
