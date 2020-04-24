@@ -4,6 +4,22 @@ from operator import attrgetter
 from copy import copy, deepcopy
 from tqdm import tqdm
 
+def deepish_copy(org):
+    '''
+    much, much faster than deepcopy, for a dict of the simple python types.
+    '''
+    out = dict().fromkeys(org)
+    for k,v in org.iteritems():
+        try:
+            out[k] = v.copy()   # dicts, sets
+        except AttributeError:
+            try:
+                out[k] = v[:]   # lists, tuples, strings, unicode
+            except TypeError:
+                out[k] = v      # ints
+ 
+    return out
+
 class MCTS:
     def __init__(self, game, exploration_constant, a_net=None, epsilon=1):
         self.game = game
@@ -89,11 +105,18 @@ class MCTS:
 
             Returns 1 if player 1 wins, 0 if player 2 wins
         """
+        
+        """
         rollout_game = deepcopy(self.game)
         rollout_game.do_action(node.action)
-        while self.non_terminal(node, rollout_game):
-            node = self.rollout_policy(node, rollout_game)
-            rollout_game.do_action(node.action)
+        """
+        self.game.copy_board()
+        p = self.game.playing
+        self.game.do_action(node.action)
+        while self.non_terminal(node, self.game):
+            node = self.rollout_policy(node, self.game)
+            self.game.do_action(node.action)
+        self.game.reset_map(p)
         return self.result(node)
     
     def rollout_policy(self, node, game):
@@ -106,7 +129,12 @@ class MCTS:
         else:
             pred = self.a_net.forward(node.state, node.reversed_state, dense=True)
             #cmp = max if game.playing == 1 else min
-            best_index = pred.index(max(pred))
+            try:
+                best_index = pred.index(max(pred))
+            except:
+                print(node.state)
+                print(node.reversed_state)
+                input(game.get_state())
             data = possible_states[best_index]
             #TODO: let ANET choose
             pass

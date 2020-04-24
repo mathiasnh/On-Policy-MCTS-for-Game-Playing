@@ -109,13 +109,21 @@ class NeuralNetActor:
         
         return list(filter(lambda x: x != 0, rescaled.tolist())) if dense else rescaled
 
-    def get_stuff(self, minibatch):
-        states = []
-        targets = []
-        for state, d in minibatch:
-            states.append(state)
-            targets.append(normalize(d))
-        return np.array(states), np.array(targets)
+    def save_model(self, num):
+        torch.save(self.model.state_dict(), f"models/checkpoint{num}.pht.tar")
+
+    def load_model(self, PATH = 'models1/checkpoint0.pth.tar'):
+        """
+            Loads the model weights from file into the model
+        """
+        if 'models/' not in PATH:
+            PATH = 'models/' + PATH
+        try:
+            self.model.load_state_dict(torch.load(PATH))
+            self.model.eval()
+        except:
+            print(PATH)
+            raise AttributeError
 
 def rescale(state, distribution):
     length = len(state) - 1

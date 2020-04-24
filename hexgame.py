@@ -21,6 +21,7 @@ class HexGame:
         self.size = size
         self.playing = playing
         self.board = DiamondHexMap(size, True, size**2)
+        self.board_copy = None
         self.board.init_map()
         
     def get_state(self):
@@ -29,7 +30,6 @@ class HexGame:
     def do_action(self, pos):
         cell = self.board.cells[pos]
         cell.set_peg(self.playing)
-        #input("Player {} set peg on pos {}".format(self.playing, pos))
         self.playing = self.next_player()
 
     def generate_possible_child_states(self):
@@ -37,7 +37,6 @@ class HexGame:
             Actions represent the states they lead to.
         """
         child_actions = []
-        #p = self.next_player()
         p = self.playing
         p_next = self.next_player()
         state = self.get_state()
@@ -75,11 +74,22 @@ class HexGame:
             r = [0 if x == 1 or x == 2 else 1 for x in s]
         return r
 
+    def copy_board(self):
+        self.board_copy = [(x.owned, x.connected) for x in self.board.cells.values()]
+
+    def reset_map(self, playing, hard=False):
+        self.playing = playing
+        if hard:
+            self.board.reset_map()
+        else:
+            self.board.set_map(self.board_copy)
+
 
 if __name__ == "__main__":
-    EPISODES = 5
+    EPISODES = 500
+    M = 5
     NN_LEANRING_RATE = 0.001
-    NN_HIDDEN_LAYERS = [32, 64, 128, 64]
+    NN_HIDDEN_LAYERS = [32, 64, 128, 256, 128, 64, 32]
     NN_ACTIVATION = "RELU HER"
     NN_OPTIMIZER = "ADAM HER"
     NN_LOSS_FUNCTION = "BCELoss HER"
@@ -88,10 +98,11 @@ if __name__ == "__main__":
     MC_NUMBER_SEARCH_GAMES = 500
 
 
-    size = 3
+    size = 5
     player = 1
     actual_player = 1
     mc_player = 1
+    player = 1
 
     i_save = None
     RBUF = ReplayBuffer()
@@ -99,16 +110,17 @@ if __name__ == "__main__":
 
     pr = cProfile.Profile()
 
+    # Stateful game used for actual game
+    actual_game = HexGame(size, player)
+    visualizer = HexMapVisualizer(actual_game.board.cells.values(), True, size, game_type="hex")
+    
+    mc_game = HexGame(size, player)
+    mc = MCTS(mc_game, MC_EXPLORATION_CONSTANT, a_net=ANET, epsilon=EPSILON)
+    
     pr.enable()
-    for i in tqdm(range(EPISODES)):
-        player = 1
-
-        # Stateful game used for actual game
-        actual_game = HexGame(size, player)
-        #visualizer = HexMapVisualizer(actual_game.board.cells.values(), True, size, game_type="hex")
-
-        mc_game = HexGame(size, player)
-        mc = MCTS(mc_game, MC_EXPLORATION_CONSTANT, a_net=ANET, epsilon=EPSILON)
+    for i in tqdm(range(EPISODES + 1)):
+        if i % int(EPISODES/(M-1)) == 0.0:
+            ANET.save_model(str(i))
 
         # No action needed to reach initial state
         action = None
@@ -120,54 +132,50 @@ if __name__ == "__main__":
         
         move_count = 0
         while not actual_game.is_terminal_state():
-            #visualizer.draw(actual_game.get_state(), 0.0000001)
+            #visualizer.draw(actual_game.get_state(), 0.000001)
 
             # Find the best move using MCTS
             new_root, prev_root_children = mc.tree_search(root, MC_NUMBER_SEARCH_GAMES)
             
             # Distribution of visit counts along all arcs emanating from root
             D = [child.visits for child in prev_root_children]
+
             # Add case to RBUF
             RBUF.add(root.state, root.reversed_state, D)
 
             root = new_root
 
             action = root.action
-            #print("{}, picked {} because it was  player {}'s turn".format(RBUF[-1], (root.visits, root.p1_wins), actual_game.playing))
 
             actual_game.do_action(action)
             mc.game.do_action(action)
             
             root.reset()
 
-            #print(RBUF.buffer[-1][0], RBUF.buffer[-1][2])
-            move_count += 1
-
 
         print("Player {} won!".format(actual_game.playing))
-        #visualizer.draw(actual_game.get_state(), 0.0001)
+        #visualizer.draw(actual_game.get_state(), 0.000001)
 
         state_batch, legal_moves, d_batch = RBUF.get_sample()
 
         ANET.train(state_batch, legal_moves, d_batch)
 
+        actual_game.reset_map(player, hard=True)
+        mc_game.reset_map(player, hard=True)
         EPSILON = EPSILON * 0.95    
-    """
-    plt.clf()
-    d = ANET.losses
-    plt.plot(list(d.keys()), list(d.values()))
-    plt.show()
-    """
     pr.disable()
 
     s = io.StringIO()
     sortby = SortKey.CUMULATIVE
     ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
     ps.print_stats()
-    #print(s.getvalue())
     with open('test.txt', 'w+') as f:
         f.write(s.getvalue())
 
+    plt.clf()
+    d = ANET.losses
+    plt.plot(list(d.keys()), list(d.values()))
+    plt.show()
 
 
     """

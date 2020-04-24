@@ -53,6 +53,16 @@ class HexMap:
                 #self.cells.append(Cell((i, j), 0))
                 self.cells[(i,j)] = Cell((i, j), 0)
         self.create_neighborhood()
+
+    def set_map(self, state):
+        for i, cell in enumerate(list(self.cells.values())):
+            cell.owned = state[i][0]
+            cell.connected = state[i][1]
+    
+    def reset_map(self):
+        for cell in list(self.cells.values()):
+            cell.owned = 0
+            cell.connected = False
         
 
 class DiamondHexMap(HexMap):
@@ -101,7 +111,6 @@ class Cell:
         self.pos = pos
         self.owned = pegged
         self.neighbors = neighbors
-        self.role = None
         self.connected = False
     
     def add_neighbors(self, neighbors):
