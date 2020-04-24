@@ -1,12 +1,15 @@
 from math import sqrt, log2
 from random import randrange, choice
 from operator import attrgetter
-from copy import copy
+from copy import copy, deepcopy
+from tqdm import tqdm
 
 class MCTS:
-    def __init__(self, game, exploration_constant):
+    def __init__(self, game, exploration_constant, a_net=None, epsilon=1):
         self.game = game
         self.exploration_constant = exploration_constant
+        self.a_net = a_net
+        self.epsilon = epsilon
 
     def tree_search(self, root, resources):
         for i in range(resources):
@@ -19,8 +22,16 @@ class MCTS:
             # Backpropogate result from leaf node to the root node
             self.backpropogate(leaf, simulation_result)
 
-        # Select the best move based on Q(s,a)
-        return self.best_child(root)
+            # Do not perform tree search with a single legal move to 
+            # avoid recursion error
+            if len(root.children) == 1:
+                break
+
+        if self.a_net == None:
+            # Select the best move based on Q(s,a)
+            return self.best_child(root)
+        else:
+            return self.best_child_visits(root), root.children
 
     ### Traversing
     def traverse(self, node):
@@ -32,7 +43,7 @@ class MCTS:
             node = self.best_uct(node)
 
         # If the node has never been encountered, expand 
-        if node.children == [] and self.non_terminal(node):
+        if node.children == [] and self.non_terminal(node, self.game):
             self.expand_node(node)
             
         # Either pick an unvisited child, or the node is terminal 
@@ -47,7 +58,7 @@ class MCTS:
         """
         for child in node.children:
             child.UCT(node, self.exploration_constant)
-        if node.player_to_move.name == "1":
+        if node.player_to_move == 1:
             uct = max(node.children, key=attrgetter("uct"))
         else:
             uct = min(node.children, key=attrgetter("uct"))
@@ -58,8 +69,8 @@ class MCTS:
             Creates child nodes for every legal state that can be reached 
             from node 
         """
-        for data in self.game.generate_possible_child_states(node):
-            node.add_child(Node(data["state"], data["player"], node, data["result"]))
+        for data in self.game.generate_possible_child_states():
+            node.add_child(Node(data["state"], data["player"], node, data["action"], data["reverse"]))
 
     def pick_unvisited(self, children):
         """
@@ -71,30 +82,42 @@ class MCTS:
         return choice(unvisited)
 
     ### Rollout 
-    def rollout(self, node):
+    def rollout(self, node, check=False):
         """
             Simulation: a game is played out from node. Actions are chosen 
             based on the rollout policy. 
 
             Returns 1 if player 1 wins, 0 if player 2 wins
         """
-        while self.non_terminal(node):
-            node = self.rollout_policy(node)
+        rollout_game = deepcopy(self.game)
+        rollout_game.do_action(node.action)
+        while self.non_terminal(node, rollout_game):
+            node = self.rollout_policy(node, rollout_game)
+            rollout_game.do_action(node.action)
         return self.result(node)
     
-    def rollout_policy(self, node):
+    def rollout_policy(self, node, game):
         """ 
             Pick random state and add it as a child of node
         """
-        possible_states = self.game.generate_possible_child_states(node)
-        data = choice(possible_states)
-        return Node(data["state"], data["player"], node, data["result"])
+        possible_states = game.generate_possible_child_states()
+        if randrange(100)/100 < self.epsilon:
+            data = choice(possible_states)
+        else:
+            pred = self.a_net.forward(node.state, node.reversed_state, dense=True)
+            #cmp = max if game.playing == 1 else min
+            best_index = pred.index(max(pred))
+            data = possible_states[best_index]
+            #TODO: let ANET choose
+            pass
+        
+        return Node(data["state"], data["player"], node, data["action"], data["reverse"])
 
-    def non_terminal(self, node):
-        return not self.game.env.is_terminal_state(node.get_state())
+    def non_terminal(self, node, game):
+        return not game.is_terminal_state()
 
     def result(self, node):
-        return 1 if node.parent.player_to_move.name == "1" else 0
+        return 1 if node.parent.player_to_move == 1 else 0
 
     ### Backprop
     def backpropogate(self, node, result):
@@ -114,24 +137,35 @@ class MCTS:
             Returns the child with the best Q(s,a) relative to the
             player moving from node.
         """
-        if node.player_to_move.name == "1":
+        if node.player_to_move == 1:
             cmp = max(node.children, key=attrgetter("q"))
         else:
             cmp = min(node.children, key=attrgetter("q"))
         return choice([n for n in node.children if n.q == cmp.q])
 
+    def best_child_visits(self, node):
+        """ 
+            Returns the child with the most visits
+        """
+        if node.player_to_move == 1:
+            cmp = max(node.children, key=attrgetter("visits"))
+        else:
+            cmp = min(node.children, key=attrgetter("visits"))
+        return choice([n for n in node.children if n.visits == cmp.visits])
+
 
 class Node:
-    def __init__(self, state, player, parent, action):
+    def __init__(self, state, player, parent, action, reversed_state):
         self.state = state
         self.player_to_move = player
         self.parent = parent
+        self.action = action
+        self.reversed_state = reversed_state
         self.p1_wins = 0
         self.visits = 0
         self.q = 0
         self.children = []
         self.uct = 0
-        self.action = action
 
     def is_root(self):
         return self.parent == None
@@ -164,7 +198,7 @@ class Node:
             Calculate Upper Confidence Bound relative to player that 
             moves from this node
         """
-        if parent.player_to_move.name == "2":
+        if parent.player_to_move == 2:
             c = -c
         self.uct = self.q + c * sqrt(log2(parent.visits) / self.visits)
         return self.uct
@@ -176,5 +210,6 @@ class Node:
         self.parent = None
         self.p1_wins = 0
         self.visits = 0
-        self.uct = 0
+        self.q = 0
         self.children = []
+        self.uct = 0

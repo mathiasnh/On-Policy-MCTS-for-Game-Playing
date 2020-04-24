@@ -82,14 +82,6 @@ class HexMapVisualizer:
             edge_color=self.colors, 
             width=self.weights
         )
-        """
-        edge_labels=dict([((u,v,),d['label'])
-             for u,v,d in self.board.edges(data=True)])
-        nx.draw_networkx_edge_labels(
-            self.board,
-            nx.get_node_attributes(self.board, 'pos'),
-            edge_labels=edge_labels)
-        """
         plt.axis('equal')
         plt.draw()
         plt.pause(delay)

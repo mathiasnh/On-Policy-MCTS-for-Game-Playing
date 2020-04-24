@@ -110,7 +110,9 @@ class Cell:
     def set_peg(self, player):
         self.owned = player
         self.check_placement(player)
-        self.propogate_connection(player)
+
+        if self.connected:
+            self.propogate_connection(player)
 
     def check_placement(self, player):
         x, y = self.pos
@@ -123,7 +125,7 @@ class Cell:
 
     def propogate_connection(self, player):
         for neighbor in self.neighbors:
-            if self.connected and neighbor.owned == player and not neighbor.connected:
+            if neighbor.owned == player and not neighbor.connected:
                     """
                     print("{} connected to {}".format((self.pos, "red" if self.owned == 1 else "blue"),\
                         (neighbor.pos, "red" if neighbor.owned == 1 else "blue")))
