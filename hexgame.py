@@ -86,14 +86,15 @@ class HexGame:
 
 
 if __name__ == "__main__":
-    EPISODES = 300
-    M = 5
-    NN_LEANRING_RATE = 0.001
-    NN_HIDDEN_LAYERS = [32, 64, 128, 64, 32]
+    EPISODES = 450
+    M = 4
+    NN_LEANRING_RATE = 0.1
+    NN_HIDDEN_LAYERS = [32, 64, 128, 256, 128, 64, 32]
     NN_ACTIVATION = "RELU HER"
     NN_OPTIMIZER = "ADAM HER"
     NN_LOSS_FUNCTION = "BCELoss HER"
-    EPSILON = 0.9
+    EPSILON = 0.99
+    EPSILON_DR = 0.99
     MC_EXPLORATION_CONSTANT = sqrt(2)
     MC_NUMBER_SEARCH_GAMES = 500
 
@@ -164,7 +165,7 @@ if __name__ == "__main__":
 
         actual_game.reset_map(player, hard=True)
         mc_game.reset_map(player, hard=True)
-        EPSILON = EPSILON * 0.95    
+        EPSILON *= EPSILON_DR    
     pr.disable()
 
     s = io.StringIO()
