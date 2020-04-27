@@ -110,14 +110,13 @@ class NeuralNetActor:
         return list(filter(lambda x: x != 0, rescaled.tolist())) if dense else rescaled
 
     def save_model(self, num):
-        torch.save(self.model.state_dict(), f"models/checkpoint{num}.pht.tar")
+        torch.save(self.model.state_dict(), f"models2/checkpoint{num}.pth.tar")
 
-    def load_model(self, PATH = 'models1/checkpoint0.pth.tar'):
+    def load_model(self, PATH = "models/checkpoint0.pth.tar"):
         """
             Loads the model weights from file into the model
         """
-        if 'models/' not in PATH:
-            PATH = 'models/' + PATH
+        print(PATH)
         try:
             self.model.load_state_dict(torch.load(PATH))
             self.model.eval()

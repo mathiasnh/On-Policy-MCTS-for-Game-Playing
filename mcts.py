@@ -136,7 +136,6 @@ class MCTS:
                 print(node.reversed_state)
                 input(game.get_state())
             data = possible_states[best_index]
-            #TODO: let ANET choose
             pass
         
         return Node(data["state"], data["player"], node, data["action"], data["reverse"])

@@ -69,7 +69,7 @@ class HexGame:
     def get_reversed_binary(self, s=None):
         """ Reverse state to highlight possible actions """
         if s == None:
-            r = [0 if x == 1 or x == 2 else 1 for x in self.board.cells.values()]
+            r = [0 if x.owned == 1 or x.owned == 2 else 1 for x in self.board.cells.values()]
         else:
             r = [0 if x == 1 or x == 2 else 1 for x in s]
         return r
@@ -86,10 +86,10 @@ class HexGame:
 
 
 if __name__ == "__main__":
-    EPISODES = 500
+    EPISODES = 300
     M = 5
     NN_LEANRING_RATE = 0.001
-    NN_HIDDEN_LAYERS = [32, 64, 128, 256, 128, 64, 32]
+    NN_HIDDEN_LAYERS = [32, 64, 128, 64, 32]
     NN_ACTIVATION = "RELU HER"
     NN_OPTIMIZER = "ADAM HER"
     NN_LOSS_FUNCTION = "BCELoss HER"
@@ -158,6 +158,9 @@ if __name__ == "__main__":
         state_batch, legal_moves, d_batch = RBUF.get_sample()
 
         ANET.train(state_batch, legal_moves, d_batch)
+
+        # Mix starting players
+        player = 2 if player == 1 else 1
 
         actual_game.reset_map(player, hard=True)
         mc_game.reset_map(player, hard=True)
