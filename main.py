@@ -17,22 +17,23 @@ from torch.nn import ReLU, Sigmoid, Tanh, Linear, BCELoss, LeakyReLU
 
 if __name__ == "__main__":
     
-    SIZE                    = 4
-    EPISODES                = 200
-    ACTUAL_GAMES            = 200
+    SIZE                    = 3
+    EPISODES                = 500
+    #ACTUAL_GAMES            = 500
     M                       = 4
-    G                       = 4
-    NN_LEANRING_RATE        = 0.001
+    G                       = 100
+    NN_LEANRING_RATE        = 0.0005
     NN_HIDDEN_LAYERS        = [256, 256, 128, 128]
     NN_ACTIVATION           = ReLU
     NN_OPTIMIZER            = Adam
     NN_LOSS_FUNCTION        = BCELoss
-    EPSILON                 = 0.99
+    EPSILON                 = 1
     EPSILON_DR              = 0.99
     MC_EXPLORATION_CONSTANT = sqrt(2)
-    MC_NUMBER_SEARCH_GAMES  = 200
+    MC_NUMBER_SEARCH_GAMES  = 500
     MIXED_START = False
-    SAVE_FOLDER = "models_"
+    SAVE_FOLDER = "models_3_500"
+    SAVE = True
 
     
     player = 1
@@ -54,16 +55,6 @@ if __name__ == "__main__":
     
     mc_game = HexGame(SIZE, player)
     mc = MCTS(mc_game, MC_EXPLORATION_CONSTANT, a_net=ANET, epsilon=EPSILON)
-    """
-    for i in tqdm(range(EPISODES)):
-        print(mc.epsilon)
-        
-        # Save interval for ANET params
-        i_s = str(i)
-
-        # Clear Replay Buffer
-        RBUF.clear()
-    """
     
     for i in tqdm(range(EPISODES)):
 
@@ -95,7 +86,7 @@ if __name__ == "__main__":
 
             actual_game.do_action(action)
             mc.game.do_action(action)
-            
+
             root.reset()
 
             search_timer += 1
@@ -115,12 +106,11 @@ if __name__ == "__main__":
 
         actual_game.reset_map(player, hard=True)
         mc_game.reset_map(player, hard=True)
-        #EPSILON *= EPSILON_DR
-        mc.epsilon = EPSILON - EPSILON*(i/EPISODES)**0.5    
+        mc.epsilon *= EPSILON_DR
+        #mc.epsilon = EPSILON - EPSILON*(i/EPISODES)**0.5    
 
         if i % int(EPISODES/(M-1)) == 0.0:
-            ANET.save_model(str(i))
-            ANET.epochs += 10
+            if SAVE: ANET.save_model(str(i))
 
     plt.clf()
     d = ANET.losses

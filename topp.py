@@ -112,22 +112,22 @@ from torch.nn import ReLU, Sigmoid, Tanh, Linear, BCELoss, LeakyReLU
 from math import sqrt
 
 if __name__ == "__main__":
-    SIZE                    = 4
-    EPISODES                = 200
-    ACTUAL_GAMES            = 200
+    SIZE                    = 3
+    EPISODES                = 250
+    #ACTUAL_GAMES            = 500
     M                       = 4
     G                       = 100
-    NN_LEANRING_RATE        = 0.001
-    NN_HIDDEN_LAYERS        = [16, 32, 16]
+    NN_LEANRING_RATE        = 0.0005
+    NN_HIDDEN_LAYERS        = [256, 256, 128, 128]
     NN_ACTIVATION           = ReLU
     NN_OPTIMIZER            = Adam
     NN_LOSS_FUNCTION        = BCELoss
-    EPSILON                 = 0.5
+    EPSILON                 = 1
     EPSILON_DR              = 0.99
     MC_EXPLORATION_CONSTANT = sqrt(2)
-    MC_NUMBER_SEARCH_GAMES  = 200
+    MC_NUMBER_SEARCH_GAMES  = 50
     MIXED_START = False
-    SAVE_FOLDER = "models_4nomix"
+    SAVE_FOLDER = "models_3_200"
 
     topp = TOPP(M, 
                 G, 

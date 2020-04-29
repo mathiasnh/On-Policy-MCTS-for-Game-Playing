@@ -13,6 +13,8 @@ class MCTS:
         self.epsilon = epsilon
 
     def tree_search(self, root, resources):
+        bc = self.game.copy_board()
+        p = self.game.playing
         for i in range(resources):
             # Traverse the tree to find a node that is not fully expanded
             leaf = self.traverse(root)
@@ -22,6 +24,8 @@ class MCTS:
 
             # Backpropogate result from leaf node to the root node
             self.backpropogate(leaf, simulation_result)
+
+            self.game.reset_map(p, board_copy=bc)
 
             # Do not perform tree search with a single legal move to 
             # avoid recursion error
@@ -42,6 +46,7 @@ class MCTS:
         """
         while node.is_fully_expanded():
             node = self.best_uct(node)
+            self.game.do_action(node.action)
 
         # If the node has never been encountered, expand 
         if node.children == [] and self.non_terminal(node, self.game):
@@ -90,14 +95,13 @@ class MCTS:
 
             Returns 1 if player 1 wins, 0 if player 2 wins
         """
-        
-        self.game.copy_board()
+        bc = self.game.copy_board()
         p = self.game.playing
         self.game.do_action(node.action)
         while self.non_terminal(node, self.game):
             node = self.rollout_policy(node, self.game)
             self.game.do_action(node.action)
-        self.game.reset_map(p)
+        self.game.reset_map(p, board_copy=bc)
         return self.result(node)
     
     def rollout_policy(self, node, game):

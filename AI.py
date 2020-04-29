@@ -84,13 +84,17 @@ class NeuralNetActor:
         #self.model.train()
         pred = self.forward(states, legal_moves)
         target = torch.tensor(dists, dtype=torch.float)
-
+        """
         for i in range(self.epochs):
             loss = self.criterion(pred, target)
             self.optimizer.zero_grad()
-            loss.backward()
+            loss.backward(retain_graph=True)
             self.optimizer.step()
-
+        """
+        loss = self.criterion(pred, target)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
         self.losses[self.global_step] = loss
         self.global_step += 1
         #print(f"LOSS: {loss}")
@@ -102,8 +106,8 @@ class NeuralNetActor:
             moves, and rescales them to a distribution over only the legal 
             k^2 - q moves (where q is the moves no longer available)
         """
-        s_tensor = torch.tensor(states, dtype=torch.float)
-        lm_tensor = torch.tensor(lm, dtype=torch.float)
+        s_tensor = torch.FloatTensor(states) #torch.tensor(states, dtype=torch.float)
+        lm_tensor = torch.FloatTensor(lm) #torch.tensor(lm, dtype=torch.float)
 
         # Forward pass
         p_dist = self.model(s_tensor)
@@ -141,7 +145,7 @@ def normalize(a):
 class ReplayBuffer:
     def __init__(self):
         self.buffer = []
-        self.batch_size = 64
+        self.batch_size = 500
 
     def add(self, state, reverse, D):
         D = rescale(state, D)

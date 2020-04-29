@@ -80,14 +80,15 @@ class HexGame:
         return r
 
     def copy_board(self):
-        self.board_copy = [(x.owned, x.connected) for x in self.board.cells.values()]
+        #self.board_copy = [(x.owned, x.connected) for x in self.board.cells.values()]
+        return [(x.owned, x.connected) for x in self.board.cells.values()]
 
-    def reset_map(self, playing, hard=False):
+    def reset_map(self, playing, hard=False, board_copy=None):
         self.playing = playing
         if hard:
             self.board.reset_map()
         else:
-            self.board.set_map(self.board_copy)
+            self.board.set_map(board_copy)
 
 
 if __name__ == "__main__":
