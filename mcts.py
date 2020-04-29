@@ -32,7 +32,7 @@ class MCTS:
             # Select the best move based on Q(s,a)
             return self.best_child(root)
         else:
-            return self.best_child(root), root.children
+            return self.best_child_visits(root), root.children
 
     ### Traversing
     def traverse(self, node):

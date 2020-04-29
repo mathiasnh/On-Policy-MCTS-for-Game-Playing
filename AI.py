@@ -49,12 +49,13 @@ class Actor:
 
 
 class NeuralNetActor:
-    def __init__(self, input_size, layers, learning_rate, activation, optimizer, loss_func):
+    def __init__(self, input_size, layers, learning_rate, activation, optimizer, loss_func, save_folder):
         self.input_size = input_size
         self.activation = activation()
         self.model = self.init_neural_net(layers)
         self.optimizer = optimizer(self.model.parameters(), lr=learning_rate)
-        self.criterion = loss_func()
+        self.criterion = loss_func(reduction="mean")
+        self.save_folder = save_folder
         self.global_step = 0
         self.losses = {}
         print(self.model)
@@ -107,10 +108,10 @@ class NeuralNetActor:
         
         rescaled = p_dist * lm_tensor
         
-        return list(filter(lambda x: x != 0, rescaled.tolist())) if dense else rescaled
+        return normalize(list(filter(lambda x: x != 0, rescaled.tolist()))) if dense else rescaled
 
     def save_model(self, num):
-        torch.save(self.model.state_dict(), f"models_improved/checkpoint{num}.pth.tar")
+        torch.save(self.model.state_dict(), f"{self.save_folder}/checkpoint{num}.pth.tar")
 
     def load_model(self, PATH = "models/checkpoint0.pth.tar"):
         """
@@ -138,14 +139,14 @@ def normalize(a):
 class ReplayBuffer:
     def __init__(self):
         self.buffer = []
-        self.batch_size = 128
+        self.batch_size = 64
 
     def add(self, state, reverse, D):
         D = rescale(state, D)
         if sum(D) > 0:
             D = normalize(D)
         self.buffer.append((state, reverse, D))
-        if len(self.buffer) > self.batch_size * 8:
+        if len(self.buffer) > self.batch_size * 2:
             self.buffer.pop(0)
 
     def get_sample(self):
