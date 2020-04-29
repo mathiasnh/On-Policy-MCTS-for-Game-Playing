@@ -49,13 +49,14 @@ class Actor:
 
 
 class NeuralNetActor:
-    def __init__(self, input_size, layers, learning_rate, activation, optimizer, loss_func, save_folder):
+    def __init__(self, input_size, layers, learning_rate, activation, optimizer, loss_func, save_folder, epochs=10):
         self.input_size = input_size
         self.activation = activation()
         self.model = self.init_neural_net(layers)
         self.optimizer = optimizer(self.model.parameters(), lr=learning_rate)
         self.criterion = loss_func(reduction="mean")
         self.save_folder = save_folder
+        self.epochs = epochs
         self.global_step = 0
         self.losses = {}
         print(self.model)
@@ -83,11 +84,12 @@ class NeuralNetActor:
         #self.model.train()
         pred = self.forward(states, legal_moves)
         target = torch.tensor(dists, dtype=torch.float)
-        self.optimizer.zero_grad()
-        
-        loss = self.criterion(pred, target)
-        loss.backward()
-        self.optimizer.step()
+
+        for i in range(self.epochs):
+            loss = self.criterion(pred, target)
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
 
         self.losses[self.global_step] = loss
         self.global_step += 1
@@ -146,7 +148,7 @@ class ReplayBuffer:
         if sum(D) > 0:
             D = normalize(D)
         self.buffer.append((state, reverse, D))
-        if len(self.buffer) > self.batch_size * 2:
+        if len(self.buffer) > 500:
             self.buffer.pop(0)
 
     def get_sample(self):

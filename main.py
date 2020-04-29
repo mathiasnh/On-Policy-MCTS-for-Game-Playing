@@ -23,11 +23,11 @@ if __name__ == "__main__":
     M                       = 4
     G                       = 4
     NN_LEANRING_RATE        = 0.001
-    NN_HIDDEN_LAYERS        = [16, 32, 16]
+    NN_HIDDEN_LAYERS        = [256, 256, 128, 128]
     NN_ACTIVATION           = ReLU
     NN_OPTIMIZER            = Adam
     NN_LOSS_FUNCTION        = BCELoss
-    EPSILON                 = 0.5
+    EPSILON                 = 0.99
     EPSILON_DR              = 0.99
     MC_EXPLORATION_CONSTANT = sqrt(2)
     MC_NUMBER_SEARCH_GAMES  = 200
@@ -120,6 +120,7 @@ if __name__ == "__main__":
 
         if i % int(EPISODES/(M-1)) == 0.0:
             ANET.save_model(str(i))
+            ANET.epochs += 10
 
     plt.clf()
     d = ANET.losses
