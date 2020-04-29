@@ -18,14 +18,14 @@ from torch.nn import ReLU, Sigmoid, Tanh, Linear, BCELoss, LeakyReLU
 if __name__ == "__main__":
     
     SIZE                    = 3
-    EPISODES                = 10
+    EPISODES                = 20
     ACTUAL_GAMES            = 100
     M                       = 4
     G                       = 4
-    NN_LEANRING_RATE        = 0.001
-    NN_HIDDEN_LAYERS        = [16, 32]
+    NN_LEANRING_RATE        = 0.05
+    NN_HIDDEN_LAYERS        = [16, 32, 16]
     NN_ACTIVATION           = ReLU
-    NN_OPTIMIZER            = Adam
+    NN_OPTIMIZER            = Adagrad
     NN_LOSS_FUNCTION        = BCELoss
     EPSILON                 = 0.9
     EPSILON_DR              = 0.99
@@ -73,12 +73,13 @@ if __name__ == "__main__":
             # Init Monte Carlo root
             root = Node(state, player, None, action, mc_game.get_reversed_binary())
             
-            move_count = 0
+            search_timer = 0
             while not actual_game.is_terminal_state():
                 #visualizer.draw(actual_game.get_state(), 0.1)
 
                 # Find the best move using MCTS
-                new_root, prev_root_children = mc.tree_search(root, MC_NUMBER_SEARCH_GAMES)
+                search_discount = (1 - (search_timer/SIZE**2))
+                new_root, prev_root_children = mc.tree_search(root, int(MC_NUMBER_SEARCH_GAMES*search_discount))
                 
                 # Distribution of visit counts along all arcs emanating from root
                 D = [child.q for child in prev_root_children]
@@ -94,6 +95,8 @@ if __name__ == "__main__":
                 mc.game.do_action(action)
                 
                 root.reset()
+
+                search_timer += 1
 
 
             #print("Player {} won!".format(actual_game.playing))
