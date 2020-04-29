@@ -1,8 +1,8 @@
 import numpy as np 
 
+import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.tensor
 from torch.autograd import Variable
 
 from collections import defaultdict
@@ -49,12 +49,12 @@ class Actor:
 
 
 class NeuralNetActor:
-    def __init__(self, input_size, layers, learning_rate):
+    def __init__(self, input_size, layers, learning_rate, activation, optimizer, loss_func):
         self.input_size = input_size
-        self.activation = nn.ReLU()
+        self.activation = activation()
         self.model = self.init_neural_net(layers)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.criterion = nn.BCELoss()
+        self.optimizer = optimizer(self.model.parameters(), lr=learning_rate)
+        self.criterion = loss_func()
         self.global_step = 0
         self.losses = {}
         print(self.model)
@@ -79,18 +79,18 @@ class NeuralNetActor:
         return nn.Sequential(*container_modules)
 
     def train(self, states, legal_moves, dists):
-        self.model.train()
+        #self.model.train()
         pred = self.forward(states, legal_moves)
         target = torch.tensor(dists, dtype=torch.float)
+        self.optimizer.zero_grad()
         
         loss = self.criterion(pred, target)
-        self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
         self.losses[self.global_step] = loss
         self.global_step += 1
-        print(f"LOSS: {loss}")
+        #print(f"LOSS: {loss}")
         
 
     def forward(self, states, lm, dense=False):
@@ -110,7 +110,7 @@ class NeuralNetActor:
         return list(filter(lambda x: x != 0, rescaled.tolist())) if dense else rescaled
 
     def save_model(self, num):
-        torch.save(self.model.state_dict(), f"models2/checkpoint{num}.pth.tar")
+        torch.save(self.model.state_dict(), f"models_improved/checkpoint{num}.pth.tar")
 
     def load_model(self, PATH = "models/checkpoint0.pth.tar"):
         """
@@ -141,12 +141,18 @@ class ReplayBuffer:
         self.batch_size = 128
 
     def add(self, state, reverse, D):
-        D = normalize(rescale(state, D))
+        D = rescale(state, D)
+        if sum(D) > 0:
+            D = normalize(D)
         self.buffer.append((state, reverse, D))
+        if len(self.buffer) > self.batch_size * 8:
+            self.buffer.pop(0)
 
     def get_sample(self):
         return map(list, zip(*sample(self.buffer, min(len(self.buffer), self.batch_size))))
 
+    def clear(self):
+        self.buffer = []
 
 
 class TableActor(Actor):

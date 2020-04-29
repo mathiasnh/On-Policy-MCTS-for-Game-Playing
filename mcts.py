@@ -1,24 +1,9 @@
 from math import sqrt, log2
-from random import randrange, choice
+from random import randrange, choice, random
 from operator import attrgetter
 from copy import copy, deepcopy
 from tqdm import tqdm
-
-def deepish_copy(org):
-    '''
-    much, much faster than deepcopy, for a dict of the simple python types.
-    '''
-    out = dict().fromkeys(org)
-    for k,v in org.iteritems():
-        try:
-            out[k] = v.copy()   # dicts, sets
-        except AttributeError:
-            try:
-                out[k] = v[:]   # lists, tuples, strings, unicode
-            except TypeError:
-                out[k] = v      # ints
- 
-    return out
+from utils import max_index
 
 class MCTS:
     def __init__(self, game, exploration_constant, a_net=None, epsilon=1):
@@ -47,7 +32,7 @@ class MCTS:
             # Select the best move based on Q(s,a)
             return self.best_child(root)
         else:
-            return self.best_child_visits(root), root.children
+            return self.best_child(root), root.children
 
     ### Traversing
     def traverse(self, node):
@@ -106,10 +91,6 @@ class MCTS:
             Returns 1 if player 1 wins, 0 if player 2 wins
         """
         
-        """
-        rollout_game = deepcopy(self.game)
-        rollout_game.do_action(node.action)
-        """
         self.game.copy_board()
         p = self.game.playing
         self.game.do_action(node.action)
@@ -124,17 +105,20 @@ class MCTS:
             Pick random state and add it as a child of node
         """
         possible_states = game.generate_possible_child_states()
-        if randrange(100)/100 < self.epsilon:
+        if random() < self.epsilon:
             data = choice(possible_states)
         else:
             pred = self.a_net.forward(node.state, node.reversed_state, dense=True)
-            #cmp = max if game.playing == 1 else min
+            """
             try:
                 best_index = pred.index(max(pred))
+
             except:
                 print(node.state)
                 print(node.reversed_state)
                 input(game.get_state())
+            """
+            best_index = max_index(pred)
             data = possible_states[best_index]
             pass
         

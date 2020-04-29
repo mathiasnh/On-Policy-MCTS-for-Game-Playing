@@ -4,12 +4,17 @@ from visualization import HexMapVisualizer
 from AI import NeuralNetActor, ReplayBuffer
 from matplotlib import pyplot as plt
 
-from random import choice, sample
+# Std libraries 
+from random import choice, sample 
 from tqdm import tqdm
 from math import sqrt
 from copy import copy
 
-#Profiling
+# Neural net
+from torch.optim import Adagrad, SGD, RMSprop, Adam
+from torch.nn import ReLU, Sigmoid, Tanh, Linear, BCELoss
+
+# Profiling
 import cProfile, pstats, io
 from pstats import SortKey
 
@@ -86,17 +91,18 @@ class HexGame:
 
 
 if __name__ == "__main__":
-    EPISODES = 450
+    """
+    EPISODES = 200
     M = 4
-    NN_LEANRING_RATE = 0.1
-    NN_HIDDEN_LAYERS = [32, 64, 128, 256, 128, 64, 32]
-    NN_ACTIVATION = "RELU HER"
-    NN_OPTIMIZER = "ADAM HER"
-    NN_LOSS_FUNCTION = "BCELoss HER"
+    NN_LEANRING_RATE = 0.01
+    NN_HIDDEN_LAYERS = [32, 64]
+    NN_ACTIVATION = Tanh
+    NN_OPTIMIZER = RMSprop
+    NN_LOSS_FUNCTION = BCELoss
     EPSILON = 0.99
-    EPSILON_DR = 0.99
+    EPSILON_DR = 0.9
     MC_EXPLORATION_CONSTANT = sqrt(2)
-    MC_NUMBER_SEARCH_GAMES = 500
+    MC_NUMBER_SEARCH_GAMES = 200
 
 
     size = 5
@@ -104,9 +110,13 @@ if __name__ == "__main__":
     actual_player = 1
     mc_player = 1
 
-    i_save = None
     RBUF = ReplayBuffer()
-    ANET = NeuralNetActor(size**2, NN_HIDDEN_LAYERS, NN_LEANRING_RATE)
+    ANET = NeuralNetActor(size**2, 
+                        NN_HIDDEN_LAYERS, 
+                        NN_LEANRING_RATE, 
+                        NN_ACTIVATION, 
+                        NN_OPTIMIZER, 
+                        NN_LOSS_FUNCTION)
 
     pr = cProfile.Profile()
 
@@ -132,7 +142,7 @@ if __name__ == "__main__":
         
         move_count = 0
         while not actual_game.is_terminal_state():
-            #visualizer.draw(actual_game.get_state(), 0.000001)
+            #visualizer.draw(actual_game.get_state(), 0.1)
 
             # Find the best move using MCTS
             new_root, prev_root_children = mc.tree_search(root, MC_NUMBER_SEARCH_GAMES)
@@ -154,7 +164,7 @@ if __name__ == "__main__":
 
 
         print("Player {} won!".format(actual_game.playing))
-        #visualizer.draw(actual_game.get_state(), 0.000001)
+        #visualizer.draw(actual_game.get_state(), 1)
 
         state_batch, legal_moves, d_batch = RBUF.get_sample()
 
@@ -179,32 +189,5 @@ if __name__ == "__main__":
     d = ANET.losses
     plt.plot(list(d.keys()), list(d.values()))
     plt.show()
-
-
-    """
-    game = HexGame(size)
-    visualizer = HexMapVisualizer(game.board.cells.values(), True, size, game_type="hex")
-
-    g = True
-    while g:
-        curr_state = game.get_state()
-        visualizer.draw(curr_state, 0.0000001)
-
-        actions = game.generate_possible_actions(curr_state)
-        input(actions)
-        c = choice(actions)
-        game.do_action(c, player)
-
-        if game.is_terminal_state(player):
-            print("Player {} won!".format(player))
-            visualizer.draw(game.get_state(), 0.0000001)
-            player = 1
-            game = HexGame(size)
-            visualizer = HexMapVisualizer(game.board.cells.values(), True, size, game_type="hex")
-
-        player = 2 if player == 1 else 1
-
-    print("Player {} won!".format(player))
-    visualizer.draw(game.get_state(), 1000)
     """
 
