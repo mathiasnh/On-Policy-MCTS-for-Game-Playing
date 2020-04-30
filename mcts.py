@@ -1,7 +1,7 @@
 from math import sqrt, log2
 from random import randrange, choice, random
 from operator import attrgetter
-from copy import copy, deepcopy
+from copy import copy
 from tqdm import tqdm
 from utils import max_index
 
@@ -13,8 +13,7 @@ class MCTS:
         self.epsilon = epsilon
 
     def tree_search(self, root, resources):
-        bc = self.game.copy_board()
-        p = self.game.playing
+        bc, p = self.game.copy()
         for i in range(resources):
             # Traverse the tree to find a node that is not fully expanded
             leaf = self.traverse(root)
@@ -25,7 +24,7 @@ class MCTS:
             # Backpropogate result from leaf node to the root node
             self.backpropogate(leaf, simulation_result)
 
-            self.game.reset_map(p, board_copy=bc)
+            self.game.reset(p, board_copy=bc)
 
             # Do not perform tree search with a single legal move to 
             # avoid recursion error
@@ -95,13 +94,12 @@ class MCTS:
 
             Returns 1 if player 1 wins, 0 if player 2 wins
         """
-        bc = self.game.copy_board()
-        p = self.game.playing
+        bc, p = self.game.copy()
         self.game.do_action(node.action)
         while self.non_terminal(node, self.game):
             node = self.rollout_policy(node, self.game)
             self.game.do_action(node.action)
-        self.game.reset_map(p, board_copy=bc)
+        self.game.reset(p, board_copy=bc)
         return self.result(node)
     
     def rollout_policy(self, node, game):

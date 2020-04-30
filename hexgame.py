@@ -1,22 +1,10 @@
 from hexmap import DiamondHexMap
-from mcts import MCTS, Node
-from visualization import HexMapVisualizer
-from AI import NeuralNetActor, ReplayBuffer
-from matplotlib import pyplot as plt
 
-# Std libraries 
 from random import choice, sample 
 from tqdm import tqdm
 from math import sqrt
 from copy import copy
 
-# Neural net
-from torch.optim import Adagrad, SGD, RMSprop, Adam
-from torch.nn import ReLU, Sigmoid, Tanh, Linear, BCELoss
-
-# Profiling
-import cProfile, pstats, io
-from pstats import SortKey
 
 class HexGame:
     """ 
@@ -80,115 +68,15 @@ class HexGame:
         return r
 
     def copy_board(self):
-        #self.board_copy = [(x.owned, x.connected) for x in self.board.cells.values()]
         return [(x.owned, x.connected) for x in self.board.cells.values()]
 
-    def reset_map(self, playing, hard=False, board_copy=None):
+    def reset(self, playing, hard=False, board_copy=None):
         self.playing = playing
         if hard:
             self.board.reset_map()
         else:
             self.board.set_map(board_copy)
 
-
-if __name__ == "__main__":
-    """
-    EPISODES = 200
-    M = 4
-    NN_LEANRING_RATE = 0.01
-    NN_HIDDEN_LAYERS = [32, 64]
-    NN_ACTIVATION = Tanh
-    NN_OPTIMIZER = RMSprop
-    NN_LOSS_FUNCTION = BCELoss
-    EPSILON = 0.99
-    EPSILON_DR = 0.9
-    MC_EXPLORATION_CONSTANT = sqrt(2)
-    MC_NUMBER_SEARCH_GAMES = 200
-
-
-    size = 5
-    player = 1
-    actual_player = 1
-    mc_player = 1
-
-    RBUF = ReplayBuffer()
-    ANET = NeuralNetActor(size**2, 
-                        NN_HIDDEN_LAYERS, 
-                        NN_LEANRING_RATE, 
-                        NN_ACTIVATION, 
-                        NN_OPTIMIZER, 
-                        NN_LOSS_FUNCTION)
-
-    pr = cProfile.Profile()
-
-    # Stateful game used for actual game
-    actual_game = HexGame(size, player)
-    visualizer = HexMapVisualizer(actual_game.board.cells.values(), True, size, game_type="hex")
-    
-    mc_game = HexGame(size, player)
-    mc = MCTS(mc_game, MC_EXPLORATION_CONSTANT, a_net=ANET, epsilon=EPSILON)
-    
-    pr.enable()
-    for i in tqdm(range(EPISODES + 1)):
-        if i % int(EPISODES/(M-1)) == 0.0:
-            ANET.save_model(str(i))
-
-        # No action needed to reach initial state
-        action = None
-
-        state = mc_game.get_simple_state()
-
-        # Init Monte Carlo game board
-        root = Node(state, player, None, action, mc_game.get_reversed_binary())
-        
-        move_count = 0
-        while not actual_game.is_terminal_state():
-            #visualizer.draw(actual_game.get_state(), 0.1)
-
-            # Find the best move using MCTS
-            new_root, prev_root_children = mc.tree_search(root, MC_NUMBER_SEARCH_GAMES)
-            
-            # Distribution of visit counts along all arcs emanating from root
-            D = [child.visits for child in prev_root_children]
-
-            # Add case to RBUF
-            RBUF.add(root.state, root.reversed_state, D)
-
-            root = new_root
-
-            action = root.action
-
-            actual_game.do_action(action)
-            mc.game.do_action(action)
-            
-            root.reset()
-
-
-        print("Player {} won!".format(actual_game.playing))
-        #visualizer.draw(actual_game.get_state(), 1)
-
-        state_batch, legal_moves, d_batch = RBUF.get_sample()
-
-        ANET.train(state_batch, legal_moves, d_batch)
-
-        # Mix starting players
-        player = 2 if player == 1 else 1
-
-        actual_game.reset_map(player, hard=True)
-        mc_game.reset_map(player, hard=True)
-        EPSILON *= EPSILON_DR    
-    pr.disable()
-
-    s = io.StringIO()
-    sortby = SortKey.CUMULATIVE
-    ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-    ps.print_stats()
-    with open('test.txt', 'w+') as f:
-        f.write(s.getvalue())
-
-    plt.clf()
-    d = ANET.losses
-    plt.plot(list(d.keys()), list(d.values()))
-    plt.show()
-    """
+    def copy(self):
+        return self.copy_board(), self.playing
 

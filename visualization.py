@@ -84,4 +84,7 @@ class HexMapVisualizer:
         )
         plt.axis('equal')
         plt.draw()
-        plt.pause(delay)
+        if show:
+            plt.show()
+        else:
+            plt.pause(delay)

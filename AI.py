@@ -83,21 +83,14 @@ class NeuralNetActor:
     def train(self, states, legal_moves, dists):
         #self.model.train()
         pred = self.forward(states, legal_moves)
-        target = torch.tensor(dists, dtype=torch.float)
-        """
-        for i in range(self.epochs):
-            loss = self.criterion(pred, target)
-            self.optimizer.zero_grad()
-            loss.backward(retain_graph=True)
-            self.optimizer.step()
-        """
+        target = torch.FloatTensor(dists) #torch.tensor(dists, dtype=torch.float)
+
         loss = self.criterion(pred, target)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
         self.losses[self.global_step] = loss
         self.global_step += 1
-        #print(f"LOSS: {loss}")
         
 
     def forward(self, states, lm, dense=False):
