@@ -110,18 +110,9 @@ class MCTS:
         if random() < self.epsilon:
             data = choice(possible_states)
         else:
-            pred = self.a_net.forward(node.state, node.reversed_state, dense=True)
-            """
-            try:
-                best_index = pred.index(max(pred))
-
-            except:
-                print(node.state)
-                print(node.reversed_state)
-                input(game.get_state())
-            """
-            best_index = max_index(pred)
-            data = possible_states[best_index]
+            _, idx = self.a_net.get_move(node.state, node.reversed_state)
+            #best_index = max_index(pred)
+            data = possible_states[idx]
             pass
         
         return Node(data["state"], data["player"], node, data["action"], data["reverse"])

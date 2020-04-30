@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torch.nn.functional as f
 from torch.autograd import Variable
 
 from collections import defaultdict
@@ -81,8 +82,7 @@ class NeuralNetActor:
         return nn.Sequential(*container_modules)
 
     def train(self, states, legal_moves, dists):
-        #self.model.train()
-        pred = self.forward(states, legal_moves)
+        pred = self.forward(states)
         target = torch.FloatTensor(dists) #torch.tensor(dists, dtype=torch.float)
 
         loss = self.criterion(pred, target)
@@ -92,22 +92,30 @@ class NeuralNetActor:
         self.losses[self.global_step] = loss
         self.global_step += 1
         
+    def forward(self, states):
+        s_tensor = torch.FloatTensor(states)
+        return self.model(s_tensor)
 
-    def forward(self, states, lm, dense=False):
+    def get_move(self, state, lm):
         """
             Produces probability distribution over all k^2 (k = size of board) 
             moves, and rescales them to a distribution over only the legal 
             k^2 - q moves (where q is the moves no longer available)
         """
-        s_tensor = torch.FloatTensor(states) #torch.tensor(states, dtype=torch.float)
-        lm_tensor = torch.FloatTensor(lm) #torch.tensor(lm, dtype=torch.float)
-
-        # Forward pass
-        p_dist = self.model(s_tensor)
-        
-        rescaled = p_dist * lm_tensor
-        
-        return normalize(list(filter(lambda x: x != 0, rescaled.tolist()))) if dense else rescaled
+        s_tensor = torch.FloatTensor(state)
+        length = len([m for m in lm if m == 1])
+        pred = self.forward(s_tensor).data.numpy()
+        sum_ = 0
+        new_pred = np.zeros(length)
+        npi = 0
+        for i in range(self.input_size):
+            if lm[i]:
+                sum_ += pred[i]
+                new_pred[npi] = pred[i]
+                npi += 1
+        new_pred /= sum_
+        greedy_index = np.argmax(new_pred)
+        return new_pred, greedy_index
 
     def save_model(self, num):
         torch.save(self.model.state_dict(), f"{self.save_folder}/checkpoint{num}.pth.tar")
@@ -138,12 +146,14 @@ def normalize(a):
 class ReplayBuffer:
     def __init__(self):
         self.buffer = []
-        self.batch_size = 500
+        self.batch_size = 250
 
     def add(self, state, reverse, D):
-        D = rescale(state, D)
+        """
         if sum(D) > 0:
             D = normalize(D)
+        """
+        D = rescale(state, D)
         self.buffer.append((state, reverse, D))
         if len(self.buffer) > 500:
             self.buffer.pop(0)

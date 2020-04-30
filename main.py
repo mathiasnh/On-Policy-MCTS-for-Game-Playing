@@ -18,7 +18,7 @@ from torch.nn import ReLU, Sigmoid, Tanh, Linear, BCELoss, LeakyReLU
 if __name__ == "__main__":
     
     SIZE                    = 5
-    EPISODES                = 350
+    EPISODES                = 250
     M                       = 4
     G                       = 24
     NN_LEANRING_RATE        = 0.001
@@ -26,21 +26,21 @@ if __name__ == "__main__":
     NN_ACTIVATION           = ReLU
     NN_OPTIMIZER            = Adam
     NN_LOSS_FUNCTION        = BCELoss
-    EPSILON                 = 1
+    EPSILON                 = 0.99
     EPSILON_DR              = 0.99
     MC_EXPLORATION_CONSTANT = sqrt(2)
-    MC_NUMBER_SEARCH_GAMES  = 2000
+    MC_NUMBER_SEARCH_GAMES  = 500
     
     DISPLAY_INDICES = []
     DISPLAY_DELAY = 0.5
 
     MIXED_START = False
-    SAVE_FOLDER = "models_demo_short"
+    SAVE_FOLDER = "models_3_250_new"
     SAVE = True
 
     # TOPP
-    TOPP_ONLY = True
-    ON_POLICY_DISPLAY = True
+    TOPP_ONLY = False
+    ON_POLICY_DISPLAY = False
     TOPP_DELAY = 0.2
 
     if not TOPP_ONLY:
@@ -73,13 +73,13 @@ if __name__ == "__main__":
             # Init Monte Carlo root
             root = Node(state, player, None, action, mc_game.get_reversed_binary())
             
-            search_timer = 0
+            #search_timer = 0
             while not actual_game.is_terminal_state():
                 if i in DISPLAY_INDICES: visualizer.draw(actual_game.get_state(), DISPLAY_DELAY)
 
                 # Find the best move using MCTS
-                search_discount = (1 - (search_timer/SIZE**2))
-                new_root, prev_root_children = mc.tree_search(root, int(MC_NUMBER_SEARCH_GAMES*search_discount))
+                #search_discount = (1 - (search_timer/SIZE**2))
+                new_root, prev_root_children = mc.tree_search(root, MC_NUMBER_SEARCH_GAMES)
                 
                 # Distribution of visit counts along all arcs emanating from root
                 D = [child.visits/root.visits for child in prev_root_children]
@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
                 root.reset()
 
-                search_timer += 1
+                #search_timer += 1
 
 
             if i in DISPLAY_INDICES: 
