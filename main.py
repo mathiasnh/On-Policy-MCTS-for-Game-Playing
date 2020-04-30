@@ -21,7 +21,7 @@ if __name__ == "__main__":
     EPISODES                = 250
     M                       = 4
     G                       = 24
-    NN_LEANRING_RATE        = 0.001
+    NN_LEANRING_RATE        = 0.0005
     NN_HIDDEN_LAYERS        = [256, 256, 128, 128]
     NN_ACTIVATION           = ReLU
     NN_OPTIMIZER            = Adam
@@ -29,17 +29,17 @@ if __name__ == "__main__":
     EPSILON                 = 0.99
     EPSILON_DR              = 0.99
     MC_EXPLORATION_CONSTANT = sqrt(2)
-    MC_NUMBER_SEARCH_GAMES  = 500
+    MC_NUMBER_SEARCH_GAMES  = 300
     
     DISPLAY_INDICES = []
     DISPLAY_DELAY = 0.5
 
     MIXED_START = False
-    SAVE_FOLDER = "models_3_250_new"
-    SAVE = True
+    SAVE_FOLDER = "demo_5x5"
+    SAVE = False
 
     # TOPP
-    TOPP_ONLY = False
+    TOPP_ONLY = True
     ON_POLICY_DISPLAY = False
     TOPP_DELAY = 0.2
 

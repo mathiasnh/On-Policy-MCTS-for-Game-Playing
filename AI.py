@@ -146,7 +146,7 @@ def normalize(a):
 class ReplayBuffer:
     def __init__(self):
         self.buffer = []
-        self.batch_size = 250
+        self.batch_size = 128
 
     def add(self, state, reverse, D):
         """
@@ -155,7 +155,7 @@ class ReplayBuffer:
         """
         D = rescale(state, D)
         self.buffer.append((state, reverse, D))
-        if len(self.buffer) > 500:
+        if len(self.buffer) > 128*2:
             self.buffer.pop(0)
 
     def get_sample(self):

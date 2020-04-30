@@ -76,10 +76,10 @@ class TOPP:
 
                     possible_states = game.generate_possible_child_states()
 
-                    pred = player.model.get_move(state, legal_moves)
+                    pred, idx = player.model.get_move(state, legal_moves)
                     
-                    if random() > (0 if self.display else 0.5): 
-                        best_index = max_index(pred)
+                    if random() > (0 if self.display else 0.2): 
+                        best_index = idx
                     else:
                         best_index = np.random.choice(np.arange(len(pred)), p=pred)
                     
