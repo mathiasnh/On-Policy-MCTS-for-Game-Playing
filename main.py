@@ -20,9 +20,9 @@ if __name__ == "__main__":
     SIZE                    = 5
     EPISODES                = 250
     M                       = 4
-    G                       = 24
+    G                       = 50
     NN_LEANRING_RATE        = 0.0005
-    NN_HIDDEN_LAYERS        = [256, 256, 128, 128]
+    NN_HIDDEN_LAYERS        = [256,256,128,128]
     NN_ACTIVATION           = ReLU
     NN_OPTIMIZER            = Adam
     NN_LOSS_FUNCTION        = BCELoss
@@ -63,7 +63,7 @@ if __name__ == "__main__":
         mc_game = HexGame(SIZE, player)
         mc = MCTS(mc_game, MC_EXPLORATION_CONSTANT, a_net=ANET, epsilon=EPSILON)
         
-        for i in tqdm(range(EPISODES)):
+        for i in tqdm(range(EPISODES+1)):
 
             # No action needed to reach initial state
             action = None
@@ -73,12 +73,10 @@ if __name__ == "__main__":
             # Init Monte Carlo root
             root = Node(state, player, None, action, mc_game.get_reversed_binary())
             
-            #search_timer = 0
             while not actual_game.is_terminal_state():
                 if i in DISPLAY_INDICES: visualizer.draw(actual_game.get_state(), DISPLAY_DELAY)
 
                 # Find the best move using MCTS
-                #search_discount = (1 - (search_timer/SIZE**2))
                 new_root, prev_root_children = mc.tree_search(root, MC_NUMBER_SEARCH_GAMES)
                 
                 # Distribution of visit counts along all arcs emanating from root
@@ -96,8 +94,6 @@ if __name__ == "__main__":
 
                 root.reset()
 
-                #search_timer += 1
-
 
             if i in DISPLAY_INDICES: 
                 visualizer.draw(actual_game.get_state(), DISPLAY_DELAY, show=True)
@@ -113,8 +109,7 @@ if __name__ == "__main__":
 
             actual_game.reset(player, hard=True)
             mc_game.reset(player, hard=True)
-            mc.epsilon *= EPSILON_DR
-            #mc.epsilon = EPSILON - EPSILON*(i/EPISODES)**0.5    
+            mc.epsilon *= EPSILON_DR   
 
             if i % int(EPISODES/(M-1)) == 0.0:
                 if SAVE: ANET.save_model(str(i))

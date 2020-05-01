@@ -1,4 +1,5 @@
 import numpy as np 
+import os
 
 import torch
 import torch.nn as nn
@@ -9,6 +10,7 @@ from torch.autograd import Variable
 from collections import defaultdict
 from random import randrange, sample
 from abc import ABC, abstractmethod
+from utils import normalize, rescale
 
 class RLearner:
     """
@@ -118,6 +120,8 @@ class NeuralNetActor:
         return new_pred, greedy_index
 
     def save_model(self, num):
+        if not os.path.exists(f"{self.save_folder}"):
+            os.makedirs(f"{self.save_folder}")
         torch.save(self.model.state_dict(), f"{self.save_folder}/checkpoint{num}.pth.tar")
 
     def load_model(self, PATH = "models/checkpoint0.pth.tar"):
@@ -132,27 +136,12 @@ class NeuralNetActor:
             print(PATH)
             raise AttributeError
 
-def rescale(state, distribution):
-    length = len(state) - 1
-    r = np.zeros(length)
-    for i in range(length):
-        if state[i] == 0:
-            r[i] = distribution.pop(0)
-    return r
-
-def normalize(a):
-    return a / np.linalg.norm(a, ord=1)
-
 class ReplayBuffer:
     def __init__(self):
         self.buffer = []
         self.batch_size = 128
 
     def add(self, state, reverse, D):
-        """
-        if sum(D) > 0:
-            D = normalize(D)
-        """
         D = rescale(state, D)
         self.buffer.append((state, reverse, D))
         if len(self.buffer) > 128*2:
